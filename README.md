@@ -47,7 +47,10 @@ No frameworks. No build tools. No npm install. Just open `index.html` and play.
 
 ## 🖥️ Live Demo
 
+<div align="center">
 
+https://mdkamran623.github.io/QUIZ-GAMING/
+</div>
 ## 🧠 How It Works
 
 ```
