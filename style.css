@@ -313,7 +313,7 @@
   .cert-hint{ color:var(--ink-faint); font-size:0.82rem; max-width:420px; }
 
   /* ---------- CERTIFICATE OVERLAY ---------- */
-  .cert-overlay{
+ .cert-overlay{
     position:fixed; inset:0; background:rgba(4,5,12,0.82); backdrop-filter:blur(4px);
     display:none; align-items:center; justify-content:center; z-index:999; padding:24px; overflow-y:auto;
   }
@@ -379,12 +379,36 @@
 
   .locked-note{ text-align:center; color: var(--ink-faint); font-size:0.85rem; padding: 20px; }
 
+  @page{
+    size: A4 portrait;
+    margin: 10mm;
+  }
   @media print{
-    body *{ visibility:hidden; }
-    .cert-overlay, .cert-overlay *{ visibility:visible; }
-    .cert-overlay{ position:absolute; inset:0; background:#fff; backdrop-filter:none; padding:0; display:flex !important; }
+    html, body{ height:auto !important; background:#fff !important; }
+    body > *:not(.cert-overlay){ display:none !important; }
+    .cert-overlay{
+      display:block !important;
+      position:static !important;
+      inset:auto !important;
+      background:#fff !important;
+      backdrop-filter:none !important;
+      padding:0 !important;
+      margin:0 !important;
+      overflow:visible !important;
+      height:auto !important;
+      max-height:none !important;
+    }
+    .cert-overlay-inner{ width:100% !important; max-width:100% !important; margin:0 !important; }
     .cert-close-row, .cert-actions{ display:none !important; }
-    .certificate{ box-shadow:none; width:100%; }
+    .certificate{
+      box-shadow:none !important;
+      width:100% !important;
+      max-width:100% !important;
+      margin:0 !important;
+      page-break-after:avoid;
+      page-break-inside:avoid;
+      break-inside:avoid;
+    }
   }
 
   /* ---------- FULL RESPONSIVE PASS ---------- */
