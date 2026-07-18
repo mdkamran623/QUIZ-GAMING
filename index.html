@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Gaming — Premium Coding Trivia Arcade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Great+Vibes&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div>
+        <div class="brand-name">QUIZ<span>GAMING</span></div>
+        <div class="brand-tag">Premium Trivia Arcade</div>
+      </div>
+    </div>
+    <div class="stat-pill">
+      <div class="s"><b id="statPlayed">0</b><small>Played</small></div>
+      <div class="s"><b id="statBest">0</b><small>Best Score</small></div>
+      <div class="s"><b id="statCertified">0/3</b><small>Certified</small></div>
+    </div>
+  </header>
+
+  <!-- ================= HOME SCREEN ================= -->
+  <section class="screen active" id="screen-home">
+    <div class="hero">
+      <div>
+        <div class="eyebrow">Start Your Journey</div>
+        <h1 class="title">Answer sharp.<br>Earn your <em>certificate</em>.</h1>
+        <p class="lede">Pick HTML, CSS or JavaScript, race the clock, and score 80% or more in each. Clear all three and claim your official Web Development Certificate.</p>
+
+        <div class="setup-card">
+          <div class="field">
+            <label for="playerName">Your name</label>
+            <input type="text" id="playerName" placeholder="e.g. Aditya Kumar" maxlength="20">
+          </div>
+          <div class="field">
+            <label>Category</label>
+            <div class="chip-row" id="categoryChips">
+              <div class="chip active" data-cat="html">HTML</div>
+              <div class="chip" data-cat="css">CSS</div>
+              <div class="chip" data-cat="js">JavaScript</div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Difficulty</label>
+            <div class="chip-row" id="diffChips">
+              <div class="chip active" data-diff="easy">Easy · 20s</div>
+              <div class="chip" data-diff="medium">Medium · 15s</div>
+              <div class="chip" data-diff="hard">Hard · 10s</div>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="startBtn">Start Quiz →</button>
+        </div>
+      </div>
+
+      <div class="gem-stage">
+        <div class="gem-ring"></div>
+        <div class="gem">
+          <svg viewBox="0 0 200 200">
+            <defs>
+              <linearGradient id="gemGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#f7d888"/>
+                <stop offset="45%" stop-color="#f0c356"/>
+                <stop offset="100%" stop-color="#2fd9a0"/>
+              </linearGradient>
+            </defs>
+            <polygon points="100,10 180,70 150,190 50,190 20,70" fill="url(#gemGrad)" stroke="#1a1408" stroke-width="2"/>
+            <polygon points="100,10 180,70 100,95" fill="#ffffff" opacity="0.25"/>
+            <polygon points="100,95 150,190 50,190" fill="#000000" opacity="0.12"/>
+            <polygon points="20,70 100,95 50,190" fill="#000000" opacity="0.08"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= QUIZ SCREEN ================= -->
+  <section class="screen" id="screen-quiz">
+    <div class="quiz-top">
+      <div class="qcount" id="qCount">Question 1 / 8</div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="timer-ring">
+        <svg viewBox="0 0 60 60">
+          <circle class="timer-bg" cx="30" cy="30" r="26"></circle>
+          <circle class="timer-bar" id="timerBar" cx="30" cy="30" r="26" stroke-dasharray="163" stroke-dashoffset="0"></circle>
+        </svg>
+        <div class="timer-num" id="timerNum">20</div>
+      </div>
+    </div>
+
+    <div class="quiz-card">
+      <span class="cat-tag" id="catTag">HTML</span>
+      <div class="question-text" id="questionText">Loading question…</div>
+      <div class="options" id="optionsWrap"></div>
+      <div class="quiz-footer">
+        <div class="score-live">Score: <b id="liveScore">0</b> pts &nbsp;·&nbsp; Streak: <b id="liveStreak">0</b></div>
+        <button class="btn btn-ghost" id="quitBtn">Exit Quiz</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= RESULT SCREEN ================= -->
+  <section class="screen" id="screen-result">
+    <div class="result-card">
+      <div class="medal" id="medalIcon"></div>
+      <div class="result-tier" id="resultTier">GOLD VAULT KEEPER</div>
+      <div class="result-score" id="resultScore">0 pts</div>
+      <div class="result-sub" id="resultSub">You answered 0 of 0 correctly.</div>
+      <div class="result-actions">
+        <button class="btn btn-primary" id="nextQuizBtn" style="width:auto;">Next: Play CSS Quiz →</button>
+        <button class="btn btn-ghost" id="playAgainBtn">Play Again</button>
+        <button class="btn btn-ghost" id="viewCertBtn">🎓 View My Certificate</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CERTIFICATE PROGRESS ================= -->
+  <section class="cert-section">
+    <div class="section-head">
+      <h2>🎓 Web Development Certificate</h2>
+      <p>Score 80% or more in HTML, CSS and JavaScript to unlock your official certificate.</p>
+    </div>
+    <div class="cert-progress-card">
+      <div class="cert-progress-head">
+        <h3>Your Certification Progress</h3>
+        <div class="cert-status-badge" id="certStatusBadge">Not Ready</div>
+      </div>
+      <div class="subj-grid" id="subjGrid"></div>
+      <div class="cert-cta-row">
+        <div class="cert-hint" id="certHint">Play HTML, CSS and JavaScript rounds and score at least 80% correct in each to unlock your certificate.</div>
+        <button class="btn btn-primary" id="genCertBtn" style="width:auto;" disabled>Generate Certificate 🎓</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CERTIFICATE OVERLAY ================= -->
+  <div class="cert-overlay" id="certOverlay">
+    <div class="cert-overlay-inner">
+      <div class="cert-close-row">
+        <button class="btn btn-ghost" id="certDownloadBtn">⬇ Download as PDF</button>
+        <button class="btn btn-ghost" id="certCloseBtn">✕ Close</button>
+      </div>
+      <div class="certificate" id="certificateNode">
+        <div class="cert-inner">
+          <div class="cert-brandline">
+            <div class="cert-brand-mark"></div>
+            <div class="cert-brand-text">QUIZ GAMING</div>
+          </div>
+          <div class="cert-eyebrow">Certificate of Achievement</div>
+          <div class="cert-title">QUIZ GAMING WEB DEVELOPMENT CERTIFICATE</div>
+          <div class="cert-statement">This certificate is proudly presented to</div>
+          <div class="cert-name" id="certName">Guest Player</div>
+          <div class="cert-statement">for successfully demonstrating professional proficiency in</div>
+          <div class="cert-course">Web Development Fundamentals</div>
+
+          <div class="cert-subjects" id="certSubjects"></div>
+
+          <div class="cert-footer-row">
+            <div class="cert-sign-block">
+              <div class="cert-sign-name">Quiz Gaming</div>
+              <div class="cert-sign-line">Digital Signature</div>
+            </div>
+            <div class="cert-seal">
+              <span>QUIZ<br>GAMING<br>VERIFIED</span>
+            </div>
+            <div class="cert-scan-block">
+              <div id="certScanCode"></div>
+              <div class="cert-scan-label">Scan to Verify</div>
+              <div class="cert-scan-id" id="certScanId">ID: —</div>
+            </div>
+          </div>
+
+          <div class="cert-meta">
+            <div id="certDate">Issued: —</div>
+            <div id="certId">Certificate No: —</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= LEADERBOARD ================= -->
+  <section class="leader-section">
+    <div class="section-head">
+      <h2>Quiz Gaming Leaderboard</h2>
+      <p>Top scores, ranked in real time.</p>
+      <p id="leaderSyncNote" style="color:var(--gold); font-size:0.78rem; margin-top:6px; font-weight:700;">Checking sync status…</p>
+    </div>
+    <div class="leader-list">
+      <div class="leader-row head">
+        <div>#</div><div>Player</div><div>Score</div><div>Tier</div>
+      </div>
+      <div id="leaderBody">
+        <div class="empty-note">No runs yet — finish a quiz to appear on the board.</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>Built with <b>Quiz Gaming</b> · pure HTML, CSS &amp; JavaScript · Created By : <b> MD KAMRAN 623/24</b></footer>
+</div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
