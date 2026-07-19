@@ -87,9 +87,11 @@
   const LS_KEY_LEADER = "vaultquiz_leaderboard";
   const LS_KEY_PROGRESS = "quizgaming_progress";
   const LS_KEY_PLAYER = "quizgaming_playername";
+  const LS_KEY_CERT_ID = "quizgaming_certid";
+  const LS_KEY_CERT_DATE = "quizgaming_certdate";
   const CERT_PASS_PCT = 80;
 
-  /* ---------------- GIFT TIERS ---------------- */
+  /* ---------------- GIFT TIERS (used for result medal only) ---------------- */
   const GIFT_TIERS = [
     { id:"bronze", name:"Bronze Charm", min:20, desc:"A small keepsake for stepping into the vault.", icon: iconMedal("#c98a4b") },
     { id:"silver", name:"Silver Coin Pouch", min:45, desc:"Awarded to sharp minds who beat the clock.", icon: iconCoin("#c7cbe0") },
@@ -272,6 +274,12 @@
     document.getElementById("liveScore").textContent = state.score;
     document.getElementById("liveStreak").textContent = state.streak;
 
+    // reset the "time's up" feedback banner for the new question
+    const banner = document.getElementById("timeUpBanner");
+    if(banner) banner.classList.remove("show");
+    const timerRing = document.querySelector(".timer-ring");
+    if(timerRing) timerRing.classList.remove("time-critical");
+
     const wrap = document.getElementById("optionsWrap");
     wrap.innerHTML = "";
     const letters = ["A","B","C","D"];
@@ -307,34 +315,62 @@
       document.getElementById("timerNum").textContent = Math.max(state.timeLeft,0);
       const offset = circumference * (1 - state.timeLeft/total);
       bar.style.strokeDashoffset = offset;
+
+      // visual urgency in the last 5 seconds
+      const timerRing = document.querySelector(".timer-ring");
+      if(timerRing){
+        if(state.timeLeft <= 5 && state.timeLeft > 0) timerRing.classList.add("time-critical");
+        else timerRing.classList.remove("time-critical");
+      }
+
       if(state.timeLeft <= 0){
         clearInterval(state.timerId);
-        handleAnswer(-1, null); // time's up
+        handleAnswer(-1, null); // time's up — no option was selected
       }
     }, 1000);
   }
 
+  /**
+   * selectedIdx === -1 means the timer ran out and the user did NOT click
+   * any option. That case must always be scored as WRONG (no points,
+   * streak reset) and must clearly show the user it was marked wrong —
+   * it should never be silently skipped or look like a correct answer.
+   */
   function handleAnswer(selectedIdx, btnEl){
     if(state.locked) return;
     state.locked = true;
     clearInterval(state.timerId);
 
     const q = state.questions[state.idx];
+    const isTimeout = selectedIdx === -1;
+    const isCorrect = !isTimeout && selectedIdx === q.a;
+
     const options = document.querySelectorAll("#optionsWrap .option");
     options.forEach((opt, i)=>{
       opt.disabled = true;
-      if(i === q.a) opt.classList.add("correct");
-      else if(i === selectedIdx) opt.classList.add("wrong");
-      else opt.classList.add("dim");
+      if(i === q.a){
+        opt.classList.add("correct");
+      } else if(i === selectedIdx){
+        opt.classList.add("wrong");
+      } else {
+        opt.classList.add("dim");
+      }
     });
 
-    if(selectedIdx === q.a){
+    // clear, explicit feedback when the question timed out unanswered
+    const banner = document.getElementById("timeUpBanner");
+    if(isTimeout && banner){
+      banner.classList.add("show");
+    }
+
+    if(isCorrect){
       const timeBonus = Math.max(state.timeLeft, 0);
       const gained = 10 + timeBonus;
       state.score += gained;
       state.correctCount++;
       state.streak++;
     } else {
+      // wrong answer OR timeout — no points, streak resets
       state.streak = 0;
     }
 
@@ -348,7 +384,7 @@
       } else {
         finishQuiz();
       }
-    }, 1100);
+    }, isTimeout ? 1500 : 1100);
   }
 
   function finishQuiz(){
@@ -471,7 +507,8 @@
   }
 
   function buildScanCode(seed){
-    // deterministic pseudo scan-code (visual only) generated from a seed string
+    // deterministic pseudo scan-code (visual-only fallback if the real QR
+    // library fails to load) generated from a seed string
     const size = 9;
     let hash = 0;
     for(let i=0;i<seed.length;i++){ hash = (hash * 31 + seed.charCodeAt(i)) >>> 0; }
@@ -487,7 +524,40 @@
         cells += `<rect x="${c*cell}" y="${r*cell}" width="${cell}" height="${cell}" fill="${fill}"/>`;
       }
     }
-    return `<svg width="72" height="72" viewBox="0 0 ${size*cell} ${size*cell}" style="border-radius:6px; background:#fdf9ef;">${cells}</svg>`;
+    return `<svg width="90" height="90" viewBox="0 0 ${size*cell} ${size*cell}" style="border-radius:6px; background:#fdf9ef;">${cells}</svg>`;
+  }
+
+  /** Generates a REAL, camera-scannable QR code (standard finder patterns +
+   *  quiet zone) that encodes a verification URL. Any phone can scan it. */
+  function buildQRCode(text){
+    if(typeof qrcode === "undefined"){
+      console.warn("QR library not loaded — showing a decorative code instead.");
+      return buildScanCode(text);
+    }
+    try{
+      const qr = qrcode(0, "M"); // type 0 = auto-size, M = medium error correction
+      qr.addData(text);
+      qr.make();
+      const count = qr.getModuleCount();
+      const cell = 4;
+      const quiet = 4; // standard QR quiet-zone border so scanners can lock on
+      const size = (count + quiet * 2) * cell;
+      let cells = "";
+      for(let r=0;r<count;r++){
+        for(let c=0;c<count;c++){
+          if(qr.isDark(r,c)){
+            cells += `<rect x="${(c+quiet)*cell}" y="${(r+quiet)*cell}" width="${cell}" height="${cell}" fill="#1a1408"/>`;
+          }
+        }
+      }
+      return `<svg width="90" height="90" viewBox="0 0 ${size} ${size}" style="border-radius:6px;">
+        <rect x="0" y="0" width="${size}" height="${size}" fill="#ffffff"/>
+        ${cells}
+      </svg>`;
+    }catch(err){
+      console.warn("QR generation failed, falling back.", err);
+      return buildScanCode(text);
+    }
   }
 
   function openCertificate(){
@@ -495,20 +565,85 @@
     if(!isCertEligible(prog)) return;
 
     const name = localStorage.getItem(LS_KEY_PLAYER) || state.playerName || "Guest Player";
-    const now = new Date();
-    const dateStr = now.toLocaleDateString("en-IN", { day:"2-digit", month:"long", year:"numeric" });
-    const certId = "QG-" + now.getFullYear() + "-" + Math.abs(hashStr(name + now.getTime())).toString(36).toUpperCase().slice(0,6);
 
+    // reuse the same certificate ID/date every time this player views it,
+    // so the QR code always points to one stable, verifiable record
+    let certId = localStorage.getItem(LS_KEY_CERT_ID);
+    let issuedAt = parseInt(localStorage.getItem(LS_KEY_CERT_DATE) || "0", 10);
+    if(!certId || !issuedAt){
+      const now = new Date();
+      certId = "QG-" + now.getFullYear() + "-" + Math.abs(hashStr(name + now.getTime())).toString(36).toUpperCase().slice(0,6);
+      issuedAt = now.getTime();
+      localStorage.setItem(LS_KEY_CERT_ID, certId);
+      localStorage.setItem(LS_KEY_CERT_DATE, String(issuedAt));
+    }
+    const dateStr = new Date(issuedAt).toLocaleDateString("en-IN", { day:"2-digit", month:"long", year:"numeric" });
+
+    document.getElementById("certVerifiedBadge").classList.remove("show");
     document.getElementById("certName").textContent = name;
     document.getElementById("certDate").textContent = "Issued: " + dateStr;
     document.getElementById("certId").textContent = "Certificate No: " + certId;
     document.getElementById("certScanId").textContent = "ID: " + certId;
-    document.getElementById("certScanCode").innerHTML = buildScanCode(certId);
+
+    const verifyUrl = location.origin + location.pathname + "?verify=" + encodeURIComponent(certId);
+    document.getElementById("certScanCode").innerHTML = buildQRCode(verifyUrl);
 
     const subjWrap = document.getElementById("certSubjects");
     subjWrap.innerHTML = SUBJ_ORDER.map(id => `<div class="cert-subject-pill">${SUBJ_FULL[id]} · ${prog[id]}%</div>`).join("");
 
+    // publish this certificate so scanning the QR from ANY device can look
+    // it up and show the exact same certificate back
+    if(firebaseReady){
+      fbDb.ref("certificates/" + certId).set({
+        name: name,
+        html: prog.html || 0,
+        css: prog.css || 0,
+        js: prog.js || 0,
+        issuedAt: issuedAt
+      }).catch(err=> console.warn("Could not publish certificate for verification:", err));
+    }
+
     document.getElementById("certOverlay").classList.add("show");
+  }
+
+  /** If this page was opened via a certificate's QR code (?verify=ID),
+   *  look the certificate up in Firebase and display the exact same
+   *  certificate automatically, marked as verified. */
+  function checkCertificateVerification(){
+    const params = new URLSearchParams(location.search);
+    const certId = params.get("verify");
+    if(!certId) return;
+
+    if(!firebaseReady){
+      alert("This certificate can't be verified right now — the site owner hasn't connected Firebase yet.");
+      return;
+    }
+
+    fbDb.ref("certificates/" + certId).once("value").then(snapshot=>{
+      const data = snapshot.val();
+      if(!data){
+        alert("No certificate found for ID: " + certId);
+        return;
+      }
+      const dateStr = new Date(data.issuedAt).toLocaleDateString("en-IN", { day:"2-digit", month:"long", year:"numeric" });
+
+      document.getElementById("certVerifiedBadge").classList.add("show");
+      document.getElementById("certName").textContent = data.name;
+      document.getElementById("certDate").textContent = "Issued: " + dateStr;
+      document.getElementById("certId").textContent = "Certificate No: " + certId;
+      document.getElementById("certScanId").textContent = "ID: " + certId;
+
+      const verifyUrl = location.origin + location.pathname + "?verify=" + encodeURIComponent(certId);
+      document.getElementById("certScanCode").innerHTML = buildQRCode(verifyUrl);
+
+      const subjWrap = document.getElementById("certSubjects");
+      subjWrap.innerHTML = SUBJ_ORDER.map(id => `<div class="cert-subject-pill">${SUBJ_FULL[id]} · ${data[id]||0}%</div>`).join("");
+
+      document.getElementById("certOverlay").classList.add("show");
+    }).catch(err=>{
+      console.error("Verification lookup failed:", err);
+      alert("Couldn't verify this certificate right now. Please try again later.");
+    });
   }
 
   function hashStr(str){
@@ -517,13 +652,72 @@
     return h;
   }
 
+  /* ---------------- CERTIFICATE DOWNLOAD (JPG, one click, no cropping) ---------------- */
+  function downloadCertificateAsJPG(){
+    const original = document.getElementById("certificateNode");
+    const btn = document.getElementById("certDownloadBtn");
+    if(!original || !btn) return;
+
+    if(typeof html2canvas === "undefined"){
+      alert("Download library failed to load. Please check your internet connection and try again.");
+      return;
+    }
+
+    const originalText = btn.textContent;
+    btn.textContent = "Preparing…";
+    btn.disabled = true;
+
+    // Clone the certificate into an offscreen, padded wrapper. This
+    // guarantees the certificate's outer black border and drop-shadow
+    // always have breathing room and can NEVER get clipped at the
+    // capture edges, regardless of screen size or scroll position.
+    const PAD = 40;
+    const rect = original.getBoundingClientRect();
+    const wrapper = document.createElement("div");
+    wrapper.style.position = "fixed";
+    wrapper.style.top = "0";
+    wrapper.style.left = "-99999px";
+    wrapper.style.zIndex = "-1";
+    wrapper.style.padding = PAD + "px";
+    wrapper.style.background = "#fdf9ef";
+    wrapper.style.width = (rect.width + PAD * 2) + "px";
+
+    const clone = original.cloneNode(true);
+    clone.style.width = rect.width + "px";
+    clone.style.margin = "0";
+    wrapper.appendChild(clone);
+    document.body.appendChild(wrapper);
+
+    html2canvas(wrapper, {
+      scale: 3,                 // sharp, high-resolution export
+      backgroundColor: "#fdf9ef",
+      useCORS: true,
+      logging: false
+    }).then(canvas => {
+      const link = document.createElement("a");
+      const safeName = (localStorage.getItem(LS_KEY_PLAYER) || "Player").replace(/[^a-z0-9]+/gi, "-");
+      link.download = `Quiz-Gaming-Certificate-${safeName}.jpg`;
+      link.href = canvas.toDataURL("image/jpeg", 0.95);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      wrapper.remove();
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }).catch(err=>{
+      console.error("Certificate download failed:", err);
+      wrapper.remove();
+      btn.textContent = originalText;
+      btn.disabled = false;
+      alert("Something went wrong generating the image. Please try again.");
+    });
+  }
+
   document.getElementById("genCertBtn").addEventListener("click", openCertificate);
   document.getElementById("certCloseBtn").addEventListener("click", ()=>{
     document.getElementById("certOverlay").classList.remove("show");
   });
-  document.getElementById("certDownloadBtn").addEventListener("click", ()=>{
-    window.print();
-  });
+  document.getElementById("certDownloadBtn").addEventListener("click", downloadCertificateAsJPG);
   document.getElementById("certOverlay").addEventListener("click", (e)=>{
     if(e.target.id === "certOverlay") document.getElementById("certOverlay").classList.remove("show");
   });
@@ -535,6 +729,7 @@
     renderCertProgress();
     const savedName = localStorage.getItem(LS_KEY_PLAYER);
     if(savedName) document.getElementById("playerName").value = savedName;
+    checkCertificateVerification();
   }
   init();
 
