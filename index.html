@@ -100,6 +100,7 @@
       <span class="cat-tag" id="catTag">HTML</span>
       <div class="question-text" id="questionText">Loading question…</div>
       <div class="options" id="optionsWrap"></div>
+      <div class="time-up-banner" id="timeUpBanner">⏰ Time's Up! No answer selected — marked as Wrong ❌</div>
       <div class="quiz-footer">
         <div class="score-live">Score: <b id="liveScore">0</b> pts &nbsp;·&nbsp; Streak: <b id="liveStreak">0</b></div>
         <button class="btn btn-ghost" id="quitBtn">Exit Quiz</button>
@@ -145,15 +146,27 @@
   <div class="cert-overlay" id="certOverlay">
     <div class="cert-overlay-inner">
       <div class="cert-close-row">
-        <button class="btn btn-ghost" id="certDownloadBtn">⬇ Download as PDF</button>
+        <button class="btn btn-ghost" id="certDownloadBtn">⬇ Download as JPG</button>
         <button class="btn btn-ghost" id="certCloseBtn">✕ Close</button>
       </div>
       <div class="certificate" id="certificateNode">
         <div class="cert-inner">
           <div class="cert-brandline">
-            <div class="cert-brand-mark"></div>
+            <div class="cert-brand-mark">
+              <svg width="30" height="30" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="certLogoGrad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#f0c356"/>
+                    <stop offset="100%" stop-color="#2fd9a0"/>
+                  </linearGradient>
+                </defs>
+                <rect x="0" y="0" width="30" height="30" rx="8" fill="url(#certLogoGrad)"/>
+                <polygon points="15,6 24,15 15,24 6,15" fill="#fdf9ef"/>
+              </svg>
+            </div>
             <div class="cert-brand-text">QUIZ GAMING</div>
           </div>
+          <div class="cert-verified-badge" id="certVerifiedBadge">✅ VERIFIED — This certificate was scanned from a real Quiz Gaming QR code</div>
           <div class="cert-eyebrow">Certificate of Achievement</div>
           <div class="cert-title">QUIZ GAMING WEB DEVELOPMENT CERTIFICATE</div>
           <div class="cert-statement">This certificate is proudly presented to</div>
@@ -208,6 +221,8 @@
 </div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
