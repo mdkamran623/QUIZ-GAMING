@@ -726,6 +726,17 @@
   }
 
   document.getElementById("genCertBtn").addEventListener("click", openCertificate);
+  document.getElementById("resetProgressLink").addEventListener("click", (e)=>{
+    e.preventDefault();
+    const name = state.playerName || localStorage.getItem(LS_KEY_PLAYER) || "guest";
+    if(!confirm(`Reset saved HTML/CSS/JS progress for "${name}"? This cannot be undone.`)) return;
+    localStorage.removeItem(progressKey());
+    localStorage.removeItem(LS_KEY_CERT_ID + "::" + progressKey());
+    localStorage.removeItem(LS_KEY_CERT_DATE + "::" + progressKey());
+    refreshHeaderStats();
+    renderCertProgress();
+    alert(`Progress reset for "${name}". They'll need 80%+ in all three again.`);
+  });
   document.getElementById("certCloseBtn").addEventListener("click", ()=>{
     document.getElementById("certOverlay").classList.remove("show");
   });
