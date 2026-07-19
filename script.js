@@ -173,14 +173,22 @@
       renderLeaderboardData(getLocalLeaderboard());
     }
   }
+  /** Progress is scoped PER PLAYER NAME so a new/different name on the
+   *  same browser always starts at 0% — old test data can never make a
+   *  new player falsely "eligible" for the certificate. */
+  function progressKey(){
+    const name = (state.playerName || localStorage.getItem(LS_KEY_PLAYER) || "guest");
+    const safe = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-") || "guest";
+    return LS_KEY_PROGRESS + "::" + safe;
+  }
   function getProgress(){
-    try{ return JSON.parse(localStorage.getItem(LS_KEY_PROGRESS) || "{}"); }catch(e){ return {}; }
+    try{ return JSON.parse(localStorage.getItem(progressKey()) || "{}"); }catch(e){ return {}; }
   }
   function saveProgress(catId, pct){
     const prog = getProgress();
     const prev = prog[catId] || 0;
     prog[catId] = Math.max(prev, pct);
-    localStorage.setItem(LS_KEY_PROGRESS, JSON.stringify(prog));
+    localStorage.setItem(progressKey(), JSON.stringify(prog));
     return prog;
   }
   function isCertEligible(prog){
@@ -218,6 +226,8 @@
   document.getElementById("startBtn").addEventListener("click", ()=>{
     const nameInput = document.getElementById("playerName");
     state.playerName = nameInput.value.trim() || "Guest Player";
+    refreshHeaderStats();
+    renderCertProgress();
     startQuiz();
   });
 
@@ -564,18 +574,20 @@
     const prog = getProgress();
     if(!isCertEligible(prog)) return;
 
-    const name = localStorage.getItem(LS_KEY_PLAYER) || state.playerName || "Guest Player";
+    const name = state.playerName || localStorage.getItem(LS_KEY_PLAYER) || "Guest Player";
+    const certIdKey = LS_KEY_CERT_ID + "::" + progressKey();
+    const certDateKey = LS_KEY_CERT_DATE + "::" + progressKey();
 
-    // reuse the same certificate ID/date every time this player views it,
+    // reuse the same certificate ID/date every time THIS player views it,
     // so the QR code always points to one stable, verifiable record
-    let certId = localStorage.getItem(LS_KEY_CERT_ID);
-    let issuedAt = parseInt(localStorage.getItem(LS_KEY_CERT_DATE) || "0", 10);
+    let certId = localStorage.getItem(certIdKey);
+    let issuedAt = parseInt(localStorage.getItem(certDateKey) || "0", 10);
     if(!certId || !issuedAt){
       const now = new Date();
       certId = "QG-" + now.getFullYear() + "-" + Math.abs(hashStr(name + now.getTime())).toString(36).toUpperCase().slice(0,6);
       issuedAt = now.getTime();
-      localStorage.setItem(LS_KEY_CERT_ID, certId);
-      localStorage.setItem(LS_KEY_CERT_DATE, String(issuedAt));
+      localStorage.setItem(certIdKey, certId);
+      localStorage.setItem(certDateKey, String(issuedAt));
     }
     const dateStr = new Date(issuedAt).toLocaleDateString("en-IN", { day:"2-digit", month:"long", year:"numeric" });
 
@@ -724,11 +736,14 @@
 
   /* ---------------- INIT ---------------- */
   function init(){
+    const savedName = localStorage.getItem(LS_KEY_PLAYER);
+    if(savedName){
+      document.getElementById("playerName").value = savedName;
+      state.playerName = savedName;
+    }
     refreshHeaderStats();
     listenLeaderboard();
     renderCertProgress();
-    const savedName = localStorage.getItem(LS_KEY_PLAYER);
-    if(savedName) document.getElementById("playerName").value = savedName;
     checkCertificateVerification();
   }
   init();
